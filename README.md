@@ -2,7 +2,13 @@
 
 Parse Thrift Message blobs without knowing their `.thrift` definition. Inspired by [protobuf-inspector](https://github.com/jmendeth/protobuf-inspector). Powered by [thrift-tools](https://github.com/pinterest/thrift-tools).  
 
-A plain run will just dump a JSON / Python dict or Throw an Exception if it's of wrong format, intended to only show if it actually is a valid Thrift message or not. Proceed with thrift-tools to use the dict programmaticaly...
+A plain run will just dump it / make a JSON  or Throw an Exception if it's of wrong format, intended to only show if it actually is a valid Thrift message or not. Proceed with thrift-tools to use the dict programmaticaly...
+
+
+
+
+
+
 
 
 # Installation
@@ -13,11 +19,15 @@ $ virtualenv venv && source venv/bin/activate
 $ pip install -r requirements.txt
 ```
 
+
+
+
+
 # Usage
 
 ```bash
 $ python thrift-inspector.py --help
-usage: thrift-inspector.py [-h] [-d] [-c] [infile]
+usage: thrift-inspector.py [-h] [-d] [-c] [--json] [infile]
 
 Deserialize Thrift payloads. Only TBinary currently supported
 
@@ -27,9 +37,11 @@ positional arguments:
 optional arguments:
   -h, --help     show this help message and exit
   -d, --debug    more verbose output
-  -c, --nocolor  turnoff color outout
+  -c, --nocolor  turnoff color output
+  --json         json output, no colors
 
-$ python thrift-inspector.py thrift_binary.bin --debug
+
+$ python thrift-inspector.py thrift_binary.bin --debug --json
 Found Thrift Message at index:0
 {
   "args": {
@@ -71,7 +83,7 @@ Found Thrift Message at index:0
   "method": "calculate"
 }
 
-$ cat thrift_binary.bin | python thrift-inspector.py  #also from stdin to head/tail/awk... before inspecting
+$ cat thrift_binary.bin | python thrift-inspector.py --json  #also from stdin to head/tail/awk... before inspecting
 {
   "args": {
     "fields": [
@@ -80,3 +92,16 @@ $ cat thrift_binary.bin | python thrift-inspector.py  #also from stdin to head/t
 ...
 ```
 
+
+
+
+
+## Extras
+
+This tools does the following except just `print ThriftMessage.read( infile )`:
+
+- Brute-force the start of the file (could be mixed format with some proprietary rules)
+
+  > This is most often seen in the wild. eg: Not just a Thrift but a byte for the version then 2 appended Thrifts => Not valid as single Thrift message 
+
+- Prints the decoded message in a colored, gist-only, eye-catching format descriptive **or** a machine-friendly Json 

@@ -14,35 +14,37 @@ class ColorFormatter(Formatter):
         self.msg_dict = msg_dict
         self.nocolor = nocolor
 
+
     def get_value(self, key, args, kwargs):
         """
-        key is index (of args) or string (of kwargs)
-        Will return Null if not string!!
+        :param key: is index (of args) or string (of kwargs)
+        :param args: positional arguments tuple, like in .format('one', 'two')
+        :param kwargs: keyword arguments dict, like in .format(first='Hodor', last='Hodor!')
+           or data={'first':'Hodor','last':'Hodor!'} ; .format(**data)
+        :return: the getattr(key) / getitem(key) of args/kwargs/the enclosed property dict
         """
         colored = ''
         if isinstance(key, str):
             if key=='':
                 return Formatter.get_value(self,key, args, kwargs)
-
-            # Check explicitly passed positional arguments first
-            # like .format('one', 'two')
             try:
                 colored = kwargs[key]
             except KeyError:
                 colored = self.msg_dict[key]
 
         elif isinstance(key,int) or isinstance(key,long):
-            # Check explicitly passed named args then
-            # like .format(first='Hodor', last='Hodor!')
-            # or   .format(**data) with data={'first':'Hodor','last':'Hodor!'}
             colored = args[key]
 
         return colored
 
 
-
-
     def format_field(self, value, format_spec):
+        """
+        Meaningful override wonly when format exists (append :...)
+        :param value: The (final) stuff before :...
+        :param format_spec: The stuff after :
+        :return: Colored (or not) value according to format_spec
+        """
         if self.nocolor:
             return format(value, format_spec)
         else:
@@ -73,10 +75,12 @@ class ColorFormatter(Formatter):
             return termcolor.colored(value, 'white')
         elif rule=='c':
             return termcolor.colored(value, 'cyan')
-        elif rule=='e': # grey
+        elif rule=='D':
             return termcolor.colored(value, None, attrs=['dark'])
         elif rule=='B':
             return termcolor.colored(value, None, attrs=['bold'])
+
+
 
 
 
@@ -86,7 +90,7 @@ if __name__ == "__main__":
     parser.add_argument('infile', help="read thrift message from binary file (omit for stdin)",
                         nargs='?', type=argparse.FileType('r'), default=sys.stdin)
     parser.add_argument("-d", "--debug", help="more verbose output", action="store_true")
-    parser.add_argument("-c", "--nocolor", help="turnoff color outout", action="store_true")
+    parser.add_argument("-c", "--nocolor", help="turnoff color output", action="store_true")
     parser.add_argument("--json", help="json output, no colors", action="store_true")
     args = parser.parse_args()
 
@@ -153,7 +157,6 @@ if __name__ == "__main__":
     }
     """
 
-    # TODO isolate colorprinting code as Parser
     # TODO test with Binary, Containers, Double, separate String, i64, byte, bool
     # TODO isolate in function the Exception heuristic
 
@@ -162,8 +165,6 @@ if __name__ == "__main__":
     if args.json:
         print json.dumps(msg.as_dict,indent=2)
     else:
-        # d = MessageDict(msg.as_dict)
-
         colorFormatter = ColorFormatter(msg.as_dict, args.nocolor)
         print colorFormatter.format('{type:B} "{method:w}" ({length} bytes) hdr:{header} seqid:{seqid}\nargs:')
 
@@ -171,15 +172,5 @@ if __name__ == "__main__":
             f = msg.as_dict['args']['fields'][idx]
 
             field_fmt_str = "args[fields]["+str(idx)+"]"
-            # format_str = "{"+field_fmt_str+"[field_id]} <{"+field_fmt_str+"[field_type]}> value_placeholder"   #WORKS
-
-            # format_str = "{0:.5}{"+field_fmt_str+"[field_id]} <{"+field_fmt_str+"[field_type]}> value_placeholder" # WORKS
-            #       ...with the print colorFormatter.format(format_str, "to_be_fmted") invocation. Does limit the arg passed.
-
-            format_str = "{" + field_fmt_str + "[field_id]:b} <{" + field_fmt_str + "[field_type]}> value_placeholder"  # WORKS
+            format_str = "{" + field_fmt_str + "[field_id]:b} <{" + field_fmt_str + "[field_type]}> value_placeholder"
             print colorFormatter.format(format_str)
-
-
-
-            # format_str = "{field_id} <{field_type}> value_placeholder"
-            # colorFormatter.format(format_str, **f)
