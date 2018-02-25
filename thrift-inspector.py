@@ -103,6 +103,30 @@ class ColorFormatter(Formatter):
 
 
 
+def recursive_print(cur_list, cur_field_literal, cur_indent):
+    for idx in range(len(cur_list)):
+        f = cur_list[idx]
+        vc = colorFormatter.value_color(f['field_type'])
+        is_struct = f['field_type'] == 'struct'
+
+        field_fmt_str = cur_field_literal + str(idx) + "]"
+        format_str = cur_indent * ' ' +  "{" + field_fmt_str + "[field_id]:b} " + \
+                     cur_indent * ' ' + "<{" + field_fmt_str + "[field_type]}> " + \
+                    (cur_indent * ' ' +  "{" + field_fmt_str + "[value]" + vc + "}" if not is_struct else '')
+        print colorFormatter.format(format_str)
+
+        if is_struct:
+            cur_list = cur_list[idx]['value']['fields']
+            cur_field_literal = cur_field_literal+str(idx)+"][value][fields]["
+            cur_indent += 2
+            recursive_print(
+                cur_list,
+                cur_field_literal,
+                cur_indent
+            )
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Deserialize Thrift payloads. Only TBinary currently supported")
@@ -122,15 +146,15 @@ if __name__ == "__main__":
     data = args.infile.read()
 
     # a bit of brute force to find the start of a message.
-    for idx in range(len(data)):
+    for offset in range(len(data)):
         try:
-            data_slice = data[idx:]
+            data_slice = data[offset:]
             msg, msglen = ThriftMessage.read( data_slice, read_values=True )
         except Exception as ex:
             continue
 
         if args.debug:
-            print "Found Thrift Message at index:%d" % idx
+            print "Found Thrift Message at offest:%d" % offset
 
         break
 
@@ -188,12 +212,11 @@ if __name__ == "__main__":
         colorFormatter = ColorFormatter(msg.as_dict, args.nocolor)
         print colorFormatter.format('{type:B} "{method:w}" ({length} bytes) hdr:{header} seqid:{seqid}\nargs:')
 
-        for idx in range(len(msg.as_dict['args']['fields'])):
-            f = msg.as_dict['args']['fields'][idx]
-            vc = colorFormatter.value_color(f['field_type'])
-
-            field_fmt_str = "args[fields]["+str(idx)+"]"
-            format_str = "{"+field_fmt_str+"[field_id]:b} "+ \
-                        "<{"+field_fmt_str+"[field_type]}> "+ \
-                    (    "{"+field_fmt_str+"[value]"+vc+"}"   if f['field_type'] != 'struct' else '' )
-            print colorFormatter.format(format_str)
+        cur_list = msg.as_dict['args']['fields']
+        cur_field_literal = "args[fields]["
+        cur_indent = 0
+        recursive_print(
+            cur_list,
+            cur_field_literal,
+            cur_indent
+        )

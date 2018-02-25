@@ -105,3 +105,5 @@ This tools does the following except just `print ThriftMessage.read( infile )`:
   > This is most often seen in the wild. eg: Not just a Thrift but a byte for the version then 2 appended Thrifts => Not valid as single Thrift message 
 
 - Prints the decoded message in a colored, gist-only, eye-catching format descriptive **or** a machine-friendly Json 
+
+![nested structs](1st_recursion.JPG)
