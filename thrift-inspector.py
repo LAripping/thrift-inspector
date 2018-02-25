@@ -81,6 +81,26 @@ class ColorFormatter(Formatter):
             return termcolor.colored(value, None, attrs=['bold'])
 
 
+    def value_color(self, type):
+        """Return the color code that will feed colorize() above, according to the type"""
+        if self.nocolor:
+            return ''
+
+        if type in ('byte', 'i16', 'i32', 'i64'):
+            return ':y'
+        elif type == 'bool':
+            return ':c'
+        elif type == 'double':
+            return ':m'
+        elif type == 'string':
+            return ':g'
+        elif type=='struct':
+            return ''
+
+
+
+
+
 
 
 
@@ -170,7 +190,10 @@ if __name__ == "__main__":
 
         for idx in range(len(msg.as_dict['args']['fields'])):
             f = msg.as_dict['args']['fields'][idx]
+            vc = colorFormatter.value_color(f['field_type'])
 
             field_fmt_str = "args[fields]["+str(idx)+"]"
-            format_str = "{" + field_fmt_str + "[field_id]:b} <{" + field_fmt_str + "[field_type]}> value_placeholder"
+            format_str = "{"+field_fmt_str+"[field_id]:b} "+ \
+                        "<{"+field_fmt_str+"[field_type]}> "+ \
+                    (    "{"+field_fmt_str+"[value]"+vc+"}"   if f['field_type'] != 'struct' else '' )
             print colorFormatter.format(format_str)
