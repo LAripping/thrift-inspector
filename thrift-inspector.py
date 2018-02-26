@@ -101,6 +101,31 @@ class ColorFormatter(Formatter):
 
 
 
+class ThriftJsonEncoder(json.JSONEncoder):
+    def default(self, o):
+        """Implement this method in a subclass such that it returns
+        a serializable object for ``o``, or calls the base implementation
+        (to raise a ``TypeError``).
+
+        For example, to support arbitrary iterators, you could
+        implement default like this::
+
+            def default(self, o):
+                try:
+                    iterable = iter(o)
+                except TypeError:
+                    pass
+                else:
+                    return list(iterable)
+                # Let the base class default method raise the TypeError
+                return JSONEncoder.default(self, o)
+
+        """
+        return iter(o.as_dict())
+
+
+
+
 
 
 def recursive_print(cur_list, cur_field_literal, cur_indent):
@@ -207,7 +232,14 @@ if __name__ == "__main__":
 
 
     if args.json:
-        print json.dumps(msg.as_dict,indent=2)
+        print json.dumps(msg.as_dict, indent=2, cls=ThriftJsonEncoder)
+        """
+        TODO fixme
+        When collections like sets are found, JSONB encoder can't parse them (not supported)
+        
+        Override json/encoder/default() to support set() or ThriftStruct
+        """
+
     else:
         colorFormatter = ColorFormatter(msg.as_dict, args.nocolor)
         print colorFormatter.format('{type:B} "{method:w}" ({length} bytes) hdr:{header} seqid:{seqid}\nargs:')
